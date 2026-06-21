@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies for linting
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y shellcheck python3-pip
+          npm install -g markdownlint-cli@0.34.0 || true
+          pip3 install yamllint || true
+
+      - name: Shellcheck scripts
+        run: |
+          files=("iac/vagrant/dns1/provision.sh" "iac/proxmox/dns1/set-env.sh")
+          for f in "${files[@]}"; do
+            if [ -f "$f" ]; then
+              shellcheck -x "$f"
+            else
+              echo "skipping $f (not found)"
+            fi
+          done
+
+      - name: Markdown lint
+        run: |
+          npx markdownlint-cli "**/*.md" --ignore node_modules || true
+
+      - name: YAML lint
+        run: |
+          if [ -f iac/proxmox/dns1/provision-cloudinit.yml ]; then
+            yamllint iac/proxmox/dns1/provision-cloudinit.yml
+          else
+            echo "no cloud-init file to lint"
+          fi
+
+      - name: Terraform fmt check (Proxmox IaC)
+        run: |
+          if [ -d iac/proxmox/dns1 ]; then
+            cd iac/proxmox/dns1
+            if command -v terraform >/dev/null 2>&1; then
+              terraform fmt -check -recursive
+            else
+              echo "terraform not installed in runner; skipping fmt check"
+            fi
+          else
+            echo "no terraform directory"
+          fi

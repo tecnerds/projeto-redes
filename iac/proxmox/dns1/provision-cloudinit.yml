@@ -1,0 +1,28 @@
+#cloud-config
+package_update: true
+packages:
+  - bind9
+  - bind9utils
+  - bind9-doc
+  - dnsutils
+
+write_files:
+  - path: /etc/bind/db.empresa.local
+    permissions: '0644'
+    content: |
+      $TTL 604800
+      @   IN  SOA dns.empresa.local. admin.empresa.local. (
+        2026062101 ; serial
+        604800
+        86400
+        2419200
+        604800 )
+
+      @       IN  NS      dns.empresa.local.
+      dns     IN  A       192.168.1.10
+      srv01   IN  A       192.168.1.20
+      web     IN  A       192.168.1.30
+
+runcmd:
+  - [ bash, -xc, "if ! grep -q 'zone \"empresa.local\"' /etc/bind/named.conf.local; then cat >> /etc/bind/named.conf.local <<'EOF'\nzone \"empresa.local\" {\n  type master;\n  file \"/etc/bind/db.empresa.local\";\n};\nEOF\nfi" ]
+  - systemctl restart bind9 || service bind9 restart
