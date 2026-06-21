@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pre-commit hook: roda linters sobre arquivos staged
+fail=0
+
+staged_files=$(git diff --cached --name-only --diff-filter=ACM || true)
+if [ -z "$staged_files" ]; then
+  exit 0
+fi
+
+echo "Running pre-commit checks..."
+
+for f in $staged_files; do
+  if [[ "$f" == *.sh ]]; then
+    if command -v shellcheck >/dev/null 2>&1; then
+      echo "shellcheck $f"
+      shellcheck -x "$f" || fail=1
+    else
+      echo "warning: shellcheck not found; skipping shell checks"
+    fi
+  fi
+
+  if [[ "$f" == *.md ]]; then
+    if command -v npx >/dev/null 2>&1; then
+      echo "markdownlint $f"
+      npx markdownlint-cli "$f" || fail=1
+    elif command -v markdownlint >/dev/null 2>&1; then
+      echo "markdownlint $f"
+      markdownlint "$f" || fail=1
+    else
+      echo "warning: markdownlint not found; skipping markdown checks"
+    fi
+  fi
+
+  if [[ "$f" == *.yml || "$f" == *.yaml ]]; then
+    if command -v yamllint >/dev/null 2>&1; then
+      echo "yamllint $f"
+      yamllint "$f" || fail=1
+    else
+      echo "warning: yamllint not found; skipping yaml checks"
+    fi
+  fi
+
+  if [[ "$f" == *.tf ]]; then
+    if command -v terraform >/dev/null 2>&1; then
+      echo "terraform fmt -check $f"
+      terraform fmt -check -diff "$f" || fail=1
+    else
+      echo "warning: terraform not found; skipping terraform fmt check"
+    fi
+  fi
+done
+
+if [ "$fail" -ne 0 ]; then
+  echo "Pre-commit checks failed. Fix issues or run linters locally." >&2
+  exit 1
+fi
+
+echo "Pre-commit checks passed."
+
+exit 0

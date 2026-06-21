@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Pre-push hook: roda checagens completas localmente antes de permitir push
+fail=0
+
+echo "Running pre-push checks..."
+
+# Check important scripts with shellcheck
+for s in "iac/vagrant/dns1/provision.sh" "iac/proxmox/dns1/set-env.sh"; do
+  if [ -f "$s" ]; then
+    if command -v shellcheck >/dev/null 2>&1; then
+      echo "shellcheck $s"
+      shellcheck -x "$s" || fail=1
+    else
+      echo "warning: shellcheck not found; skipping shell checks"
+    fi
+  fi
+done
+
+# Markdown lint all md files
+if command -v npx >/dev/null 2>&1; then
+  echo "markdownlint all .md"
+  npx markdownlint-cli "**/*.md" || fail=1
+elif command -v markdownlint >/dev/null 2>&1; then
+  markdownlint "**/*.md" || fail=1
+else
+  echo "warning: markdownlint not found; skipping markdown checks"
+fi
+
+# YAML lint cloud-init
+if [ -f iac/proxmox/dns1/provision-cloudinit.yml ]; then
+  if command -v yamllint >/dev/null 2>&1; then
+    yamllint iac/proxmox/dns1/provision-cloudinit.yml || fail=1
+  else
+    echo "warning: yamllint not found; skipping yaml checks"
+  fi
+fi
+
+# Terraform fmt check
+if [ -d iac/proxmox/dns1 ]; then
+  if command -v terraform >/dev/null 2>&1; then
+    (cd iac/proxmox/dns1 && terraform fmt -check -recursive) || fail=1
+  else
+    echo "warning: terraform not found; skipping terraform fmt check"
+  fi
+fi
+
+if [ "$fail" -ne 0 ]; then
+  echo "Pre-push checks failed. Fix issues before pushing." >&2
+  exit 1
+fi
+
+echo "Pre-push checks passed. Proceeding with push."
+exit 0
