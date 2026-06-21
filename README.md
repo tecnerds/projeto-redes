@@ -1,5 +1,8 @@
 # projeto-redes
 
+[![CI](https://github.com/tecnerds/projeto-redes/actions/workflows/ci.yml/badge.svg)](https://github.com/tecnerds/projeto-redes/actions/workflows/ci.yml)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
+
 Repositório de documentação e exemplos para laboratório de DNS (BIND9) e integração com DHCP.
 
 Conteúdo principal
@@ -34,4 +37,8 @@ Veja o texto completo em [LICENSE](LICENSE).
 SPDX: GPL-3.0-only
 
 Licença
+
+Aviso sobre IaC Proxmox
+
+Se for usar o IaC Proxmox, carregue variáveis sensíveis localmente seguindo o exemplo em `iac/proxmox/dns1/.env.example` e use `iac/proxmox/dns1/set-env.sh` para exportá-las no shell antes de executar o Terraform. Não versionar o arquivo `.env` com segredos.
 
