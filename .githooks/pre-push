@@ -13,19 +13,23 @@ for s in "iac/vagrant/dns1/provision.sh" "iac/proxmox/dns1/set-env.sh"; do
       echo "shellcheck $s"
       shellcheck -x "$s" || fail=1
     else
-      echo "warning: shellcheck not found; skipping shell checks"
+      echo "error: shellcheck not found; instale shellcheck para validar scripts" >&2
+      fail=1
     fi
   fi
 done
 
 # Markdown lint all md files
-if command -v npx >/dev/null 2>&1; then
+if command -v npx >/dev/null 2>&1 || command -v markdownlint >/dev/null 2>&1; then
   echo "markdownlint all .md"
-  npx markdownlint-cli "**/*.md" || fail=1
-elif command -v markdownlint >/dev/null 2>&1; then
-  markdownlint "**/*.md" || fail=1
+  if command -v npx >/dev/null 2>&1; then
+    npx markdownlint-cli "**/*.md" || fail=1
+  else
+    markdownlint "**/*.md" || fail=1
+  fi
 else
-  echo "warning: markdownlint not found; skipping markdown checks"
+  echo "error: markdownlint not found; instale markdownlint-cli (npm) ou markdownlint" >&2
+  fail=1
 fi
 
 # YAML lint cloud-init
@@ -33,7 +37,8 @@ if [ -f iac/proxmox/dns1/provision-cloudinit.yml ]; then
   if command -v yamllint >/dev/null 2>&1; then
     yamllint iac/proxmox/dns1/provision-cloudinit.yml || fail=1
   else
-    echo "warning: yamllint not found; skipping yaml checks"
+    echo "error: yamllint not found; instale yamllint para validar YAML" >&2
+    fail=1
   fi
 fi
 
@@ -42,7 +47,8 @@ if [ -d iac/proxmox/dns1 ]; then
   if command -v terraform >/dev/null 2>&1; then
     (cd iac/proxmox/dns1 && terraform fmt -check -recursive) || fail=1
   else
-    echo "warning: terraform not found; skipping terraform fmt check"
+    echo "error: terraform not found; instale terraform para validar configuração" >&2
+    fail=1
   fi
 fi
 

@@ -17,19 +17,22 @@ for f in $staged_files; do
       echo "shellcheck $f"
       shellcheck -x "$f" || fail=1
     else
-      echo "warning: shellcheck not found; skipping shell checks"
+      echo "error: shellcheck not found; instale shellcheck para validar scripts" >&2
+      fail=1
     fi
   fi
 
   if [[ "$f" == *.md ]]; then
-    if command -v npx >/dev/null 2>&1; then
+    if command -v npx >/dev/null 2>&1 || command -v markdownlint >/dev/null 2>&1; then
       echo "markdownlint $f"
-      npx markdownlint-cli "$f" || fail=1
-    elif command -v markdownlint >/dev/null 2>&1; then
-      echo "markdownlint $f"
-      markdownlint "$f" || fail=1
+      if command -v npx >/dev/null 2>&1; then
+        npx markdownlint-cli "$f" || fail=1
+      else
+        markdownlint "$f" || fail=1
+      fi
     else
-      echo "warning: markdownlint not found; skipping markdown checks"
+      echo "error: markdownlint not found; instale markdownlint-cli (npm) ou markdownlint" >&2
+      fail=1
     fi
   fi
 
@@ -38,7 +41,8 @@ for f in $staged_files; do
       echo "yamllint $f"
       yamllint "$f" || fail=1
     else
-      echo "warning: yamllint not found; skipping yaml checks"
+      echo "error: yamllint not found; instale yamllint para validar YAML" >&2
+      fail=1
     fi
   fi
 
@@ -47,7 +51,8 @@ for f in $staged_files; do
       echo "terraform fmt -check $f"
       terraform fmt -check -diff "$f" || fail=1
     else
-      echo "warning: terraform not found; skipping terraform fmt check"
+      echo "error: terraform not found; instale terraform para verificar formatação" >&2
+      fail=1
     fi
   fi
 done
