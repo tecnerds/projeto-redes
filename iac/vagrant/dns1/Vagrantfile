@@ -1,0 +1,12 @@
+Vagrant.configure("2") do |config|
+  config.vm.box = "debian/bullseye64"
+  config.vm.hostname = "dns1"
+
+  # Ajuste o IP se desejar usar outra sub-rede
+  config.vm.network "private_network", ip: "192.168.56.10"
+
+  # Sincroniza o repositório para dentro da VM (somente leitura por padrão com rsync)
+  config.vm.synced_folder "/Users/patrick/projeto-redes", "/vagrant_data", type: "rsync", rsync__exclude: [".git/", ".vagrant/"]
+
+  config.vm.provision "shell", path: "provision.sh"
+end
