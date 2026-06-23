@@ -68,5 +68,3 @@ brew install shellcheck yamllint terraform
 npm install -g markdownlint-cli
 ```
 
-Se preferir, posso tornar os hooks menos estritos (warnings em vez de erros) ou adicionar um script `scripts/setup-dev.sh` para instalar dependências automaticamente.
-
